@@ -4,8 +4,7 @@
 ##  - store the raw sequence and translated charges
 ##  - calculate characterization quantities: length, fractions of +/-, SCD, possibly asymmetric SCD
 ##  - simple accessors and information table
-##
-##  + Later: enable arbitrary pH -> charges renormalized:  q * 10^(sgn(q)*(pKa-pH))/(1+10^(sgn(q)*(pKa-pH)))
+
 
 import csv
 import numpy as np
@@ -23,14 +22,13 @@ Xcharge = -2        # X=fictitious (e.g. phosphorylation)
 aminos = {"R":Rcharge, "K":Kcharge, "D":Dcharge, "E":Echarge, "X":Xcharge, \
           "H":Hcharge, "C":Ccharge,"Y":Ycharge, "G":0, "Q":0, "N":0, \
           "S":0, "F":0, "A":0, "B":0, "Z":0, "I":0, "L":0, "M":0, "P":0, "T":0, "W":0, "V":0}
-#pKas = {}
-hydrophobics = ("A","I","L","M","V","F","W","P")    # sure about Y , P ??
-aromatics = ("F", "W", "Y")
+hydrophobics = ("A","I","L","M","V","F","W","P")    # somewhat fluid
+aromatics = ("F", "W", "Y")                         #
 
 #####   Class Defnition : object for loading, holding, and inspecting a given sequence
 class Sequence:
     def __init__(self, name="", alias="", info=True, \
-                    file="../rg-RPA_coex/sequences/RG_tests.csv", headName="NAME", headSeq="SEQUENCE"):
+                    file="./RG_tests.csv", headName="NAME", headSeq="SEQUENCE"):
         # load immediately if given, print info if desired
         if name:
             self.load(seqName=name, seqFile=file, hName=headName, hSeq=headSeq, seqAlias=alias)
@@ -39,7 +37,7 @@ class Sequence:
     #   #   #   #   #   #   #
 
     #   load sequence from file; save name, list of residue charges, key info
-    def load(self, seqName="sv1", seqFile="../RPA_coex/sequences/SVpappu.csv", 
+    def load(self, seqName="sv1", seqFile="./RG_tests.csv", \
                 hName="NAME", hSeq="SEQUENCE", seqAlias=""):
         pname = seqName
         alias = seqAlias
