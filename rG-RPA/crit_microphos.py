@@ -18,13 +18,16 @@ import sys
 head_name = "NAME"
 head_seq = "SEQUENCE"
 #head_seq = "Seq"
-afile = "../rG-RPA_coex/sequences/Fisher_phos_scd.csv"
-#afile = "../rG-RPA_coex/sequences/RG_tests.csv"
-#afile = "../rG-RPA_coex/sequences/yamazaki.csv"
+afile = "./Fisher_phos.csv"
+#afile = "./RG_tests.csv"
+#afile = "./yamazaki.csv"
 
 seqname = "KI-67_cons"
+
 #pars = "cions+v2_fg"
-pars = {'cions': 1, 'v2': 4.1887902047863905, 'eps0': 2.0, 'mode': 'rG'}
+
+SALT = 0
+pars = {'cions': 1, 'salt': M.phi_s(SALT), 'v2': 4.1887902047863905, 'eps0': 2.0, 'mode': 'rG'}
 
 phos_residue = "X"  # choose amino acid / residue(s) for phosphorylation replacement ('X' or 'DD')
 phos_choices = (4, 12, 42, 47, 49, 66, 76, 78, 80, 106, 119)    # list of all choices for phos. sites (indexed at 0)
@@ -57,22 +60,6 @@ elif "yamazaki" in afile:
 else:
     alias=None
 
-# adjustment for salt
-SALT = 0      # salt concentration, in milli-Molar
-phi_salt = SALT * (5.5**3) * (6.022e-4) * (1e-3)
-if SALT:
-    if type(pars) == dict:
-        pars.update({"salt":phi_salt})
-    else:
-        pars = {"cions":1, "v2":(4*M.PI/3), "salt":phi_salt, "eps0":2.0, "mode":"rG"}
-
-## check for dictionary format of parameters
-#try:
-#    pars = eval(pars)
-#except NameError:
-#    pars = pars
-
-
 # common functions to use, given a sequence (object)
 def modify_seq(seq, phos):
     aminos = list(seq.aminos)       # get string of aminos
@@ -95,10 +82,6 @@ def get_crit(seq):
     # use method to find crit.
     print("Minimizing inverse: u=1/t.\n")
     co.find_crit(phi_bracket=None, u_bracket=(1e-6,1e4), u_bracket_notes=False)
-
-    # below: use 'negative temperature' approach (with brent bracket)
-#    print("Minimizing negative: u=-t.\n")
-#    co.find_crit_NT(phi_bracket=None, u_bracket=(-1e6,-1e-4), u_bracket_notes=False)
 
     # store & print
     (pc, tc) = co.get_crit()
@@ -143,7 +126,6 @@ def get_crit(seq):
     return (pc,tc)
 
 
-
 # get main / starter sequence object (to be modified with given phosphorylations)
 main_seq = S.Sequence(seqname, file=afile, alias=alias, headSeq=head_seq, info=False)
 
@@ -159,8 +141,6 @@ for phos in all_micro_phos:
     seq.info(showSeq=True)
     (pc,tc) = get_crit(seq)
     all_crits.append((pc,tc))
-#    print(seq.aminos)
-#    print(main_seq.aminos)
 
 
 if SAVE:
