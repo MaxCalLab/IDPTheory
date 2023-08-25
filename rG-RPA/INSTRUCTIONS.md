@@ -25,8 +25,8 @@ Quick Start:
 * __phase_checker__
   - similar settings to above
   - settings for temperature-space:
-      > '''t_min_frac''' is fraction defining minimum teperature from '''t_critical''' \
-      > '''t_points''' is number of points to calculate spinodal and binodal, from '''t_critical''' down to '''t_min_frac*t_critical'''
+    > '''t_min_frac''' is fraction defining minimum teperature from '''t_critical''' \
+    > '''t_points''' is number of points to calculate spinodal and binodal, from '''t_critical''' down to '''t_min_frac*t_critical'''
   - run!
  
 * __crit_microphos__
