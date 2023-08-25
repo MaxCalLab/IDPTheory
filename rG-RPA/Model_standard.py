@@ -40,6 +40,7 @@ import Xfuncs_standard as Xfuncs           # support functions for 'x' solvers (
 DTYPE = np.float64  # unified data type
 PI = DTYPE(np.pi)   # appropriate value for 'pi'
 eps = 1e-15         # small number to avoid issues (i.e. log(eps)=number)
+phi_s = lambda cs: cs * (3.8**3) * (6.022e-7)        # obtain dimensionless form of salt concentration, given 'cs' in milli-Molar
 
 # print quick message before anything else...
 print("\n > LOADED module 'Model_standard'.\n")
