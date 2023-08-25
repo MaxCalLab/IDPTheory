@@ -38,50 +38,19 @@
 
 import numpy as np
 
-#   nice separate functions for correlations / structures
-#   scalar weighted 'total' of correlation matrix, renormalized-Gaussian option  [a.k.a. 'xi' cf. Chan & Ghosh]
-#   <Note: all following functions 'G', 'g', 'Z' take pre-squared value 'k2'.>
-#def totG0(k2, x, seq):
-#    # total of nonzero terms is the sum of a product, divided by N (not quite mean..)
-#    total = np.sum(2 * np.exp(-seq.refRange1*x*k2/6) * seq.sumsig1) / seq.N
-#    # zero term: add total charge-squared, (pre-) divided by N
-#    return (total + seq.totalsig)
-#
-##   scalar non-weighted 'total' of correlation matrix, rG option    [a.k.a. 'g' cf. Chan & Ghosh]
-#def totMinig0(k2, x, seq):
-#    # total of nonzero terms is the sum of a product, divided by N (not quite mean..)
-#    total = np.sum(2 * np.exp(-seq.refRange1*x*k2/6) * (seq.refRange1_dif)) / seq.N
-#    # zero term: unit addition, from total length divided by N
-#    return (total + 1)
-##   scalar semi-weighted 'total' of correlation matrix, rG option   [a.k.a. 'zeta' cf. Chan & Ghosh]
-#def totZ0(k2, x, seq):
-#    # total of nonzero terms is the sum of a product, divided by N (not quite mean..)
-#    total = np.sum( np.exp(-seq.refRange1*x*k2/6) * seq.sumqoff1 )
-#    # zero term: total charge on chain, divided by N
-#    return ((total + seq.qtot)/seq.N)
-
-#   above objects, allowing for arbitrary powers (i.e. 'moments')   [integer 'n' -> same as derivatives w/r/t 'x']
+##  scalar weighted 'total' of correlation matrix, renormalized-Gaussian option  [a.k.a. 'xi' cf. Chan & Ghosh]
 def totG(k2, x, seq, rng_n=0):
-#    # check if 'n'th power of range is given, otherwise assume n=0
-#    if not np.any(rng_n):
-#        return (totG0(k2,x,seq))
     # total of nonzero terms is the sum of a product, now with 'n'th power range also
     total = np.sum( 2 * np.exp(-seq.refRange1*x*k2/6) * seq.sumsig1 * rng_n)
     # zero term vanishes with range powers n>0
     return (total/seq.N + seq.totalsig*(rng_n[-1]==1))
-#   #
+##   scalar non-weighted 'total' of correlation matrix, rG option    [a.k.a. 'g' cf. Chan & Ghosh]
 def totMinig(k2, x, seq, rng_n=0):
-#    # check if 'n'th power of range is given, otherwise assume n=0
-#    if not np.any(rng_n):
-#        return (totMinig0(k2,x,seq))
     # total of nonzero terms is the sum of a product, now with 'n'th power range also
     total = np.sum( 2 * np.exp(-seq.refRange1*x*k2/6) * (seq.refRange1_dif) * rng_n)
     return (total/seq.N + 1*(rng_n[-1]==1))
-#   #
+##   scalar semi-weighted 'total' of correlation matrix, rG option   [a.k.a. 'zeta' cf. Chan & Ghosh]
 def totZ(k2, x, seq, rng_n=0):
-#    # check if 'n'th power of range is given, otherwise assume n=0
-#    if not np.any(rng_n):
-#        return (totZ0(k2,x,seq))
     # total of nonzero terms is the sum of a product, now with 'n'th power range also
     total = np.sum( np.exp(-seq.refRange1*x*k2/6) * seq.sumqoff1 * rng_n )
     return ((total + seq.qtot*(rng_n[-1]==1))/seq.N)
