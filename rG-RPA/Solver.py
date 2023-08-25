@@ -20,7 +20,6 @@ import myPlotOptions    # global options
 
 ##  Global Data Type
 DTYPE = np.float64
-#PI = DTYPE(np.pi)       # appropriate value for 'pi'
 
 eps = 1e-12         # small number to avoid issues (i.e. 'phi' near 0 or 1)
 
@@ -119,7 +118,7 @@ class Coex:
             print( ("\n\nWARNING: improper format given for options (method %s), '" % m) + str(v) + "'.")
             return
 
-    ##  NEW CRIT. PT. FINDER
+    ##  CRIT. PT. FINDER
     # --> using inverse temperature u=1/t as variable
     #   solve for 'u' first from d2F=0 (arbitrary 'phi')        <1D root finder: brenth>
     #   then find 'phi' by _minimizing 'u' across range of 'phi'   <1D minimizer: brent>
@@ -140,10 +139,6 @@ class Coex:
         ui = uc
         pmin = self.model.small   # minimum 'phi'
         pmax = self.realMax - self.model.small    # maximum 'phi'
-#        umin = 1/(200*tc)     # minimum 'u' (i.e. maximum 't', or 'T_eff') for search
-#        umax = 1/self.t_min   # maximum 'u' (i.e. minimum 't')
-#        umin = 1e-3
-#        umax = 1e3
         (umin, umax) = u_bracket
         if u_bracket_notes:
             u_print = lambda p, d2f: print("\nD2F BRACKET TEST" + \
@@ -156,15 +151,9 @@ class Coex:
             # root_scalar: method="brenth"
             u_print(phi, d2f)
             ures = opt.root_scalar(d2f, x0=ui, x1=ui/2, rtol=thr, bracket=(umin,umax))
-#            try:
-#                ures = opt.root_scalar(d2f, bracket=(umin,umax), x0=ui, x1=ui/2, rtol=thr)
-#            except:
-#                return DTYPE(1000)
             return DTYPE(ures.root)
         # obtain good bracket first (unless specified)
         if not phi_bracket:
-#            (pa,pb,pc, ua,ub,uc, calls) = opt.bracket(find_u, 0.5*pmax, 0.1*pmax)
-#            (pa,pb,pc, ua,ub,uc, calls) = opt.bracket(find_u, pc/1000, pc/50, grow_limit=1e3)
             pres = opt.minimize_scalar(find_u, method="bounded", bounds=(pmin,pmax/5), options={"xatol":thr})
         else:
             (pa,pb,pc) = phi_bracket
@@ -174,8 +163,6 @@ class Coex:
             except ValueError:
                 print("\nBRACKET FAILED:\n\t(pa,pb,pc)={}\n\t(ua, ub, uc)={}\n".format(  \
                             (pa, pb, pc),  (find_u(pa), find_u(pb), find_u(pc)) ) )
-#                input("")
-#                pres = opt.minimize_scalar(find_u, bracket=(pa,pb,pc), tol=thr)
                 return
         # end timer
         t2 = perf_counter()
@@ -200,7 +187,6 @@ class Coex:
 
     #   use numerical second derivative w/r/t phi, zeros phi1,phi2 at given t (ichi)
     def build_spino(self, t, scale=1e3, FintKW={}, XintKW={}):
-#        cmax = self.pars["iterMax"]
         thr = self.pars["thr"]
         func = lambda p: DTYPE( (scale) * (self.model.d2F(p, t, FintKW=FintKW, XintKW=XintKW)) )
         sol1 = opt.root_scalar(func, x0=0.7*self.p_min, x1=0.9*self.p_min, \
@@ -208,9 +194,6 @@ class Coex:
         sol2 = opt.root_scalar(func, x0=(self.p_max+0.1*(self.realMax-self.p_max)), \
                     x1=(self.p_max+0.2*(self.realMax-self.p_max)), \
                     bracket=(self.p_max, self.realMax-eps), xtol=thr, rtol=thr).root
-#        func = lambda p: DTYPE( (scale) * abs(self.model.d2F(p, t, FintKW=FintKW, XintKW=XintKW)) )
-#        sol1 = opt.minimize_scalar(func, bounds=(eps, self.p_min), method="bounded").x
-#        sol2 = opt.minimize_scalar(func, bounds=(self.p_max, self.realMax-eps), method="bounded").x
         return (DTYPE(sol1), DTYPE(sol2))
 
     #   evaluate partition method for chosen pars, and path viz. 'phipar' (minimum of Ftot)
@@ -234,12 +217,10 @@ class Coex:
                 perc1 = abs(phi1f-phi1i)/phi1i
                 perc2 = abs(phi2f-phi2i)/phi2i
                 if (perc1 < thr) and (perc2 < thr):
-        ##            print("\n\n\tTHRESHOLD REACHED after %i iterations.\n" % it)
                     break
                 else:
                     phi1i = phi1f
                     phi2i = phi2f
-        ##            print("\n\n\tELSE CONDITION REACHED (Maxwell).\n")
                     continue
             return (DTYPE(phi1f), DTYPE(phi2f))
         elif parm.lower() in option2:
@@ -252,20 +233,16 @@ class Coex:
                 counter += 1
                 phi1i = 0.9*rand()*self.p_min        # initial values
                 phi2i = self.p_max + 0.1*rand()*(1-self.p_max)
-                # bounded minimize methods: Nelder-Mead, L-BFGS-B, TNC, SLSQP, Powell, trust-constr
-                sol = opt.minimize(func, (phi1i,phi2i), method="Nelder-Mead",   #"TNC",
-                                   bounds=(bound1,bound2) , tol=thr)   # , options = {"maxiter":cmax})
+                sol = opt.minimize(func, (phi1i,phi2i), method="Nelder-Mead", \
+                                   bounds=(bound1,bound2) , tol=thr)
                 suc = sol.success
-##                print("\n\n\tOUTPUT from minimization : success = " + str(suc))
                 if counter >= cmax:
-##                    print("\n\t\tMaximum random search limit reached...")
                     perc1 = abs(sol.x[0]-phi1i)/phi1i
                     perc2 = abs(sol.x[1]-phi2i)/phi2i
                     half2 = "(perc1,perc2) = (%1.2e,%1.2e)\n" % (perc1,perc2)
                     print("\n\n\tNO CONVERGENCE (total free energy 2d) : " + half2)
                     return tuple(sol.x)
                 if not suc:
-##                    print("\n\t\tTrying again...")
                     continue
             return tuple(sol.x)
         else:
@@ -300,8 +277,6 @@ class Coex:
                         dx = self.model.find_dx(p1, t, x, XintD, XintKW)             # also need derivative
                     return DTYPE(abs(self.model.dF(p1,t,x,dx,FintKW) - \
                         ( self.model.F(phi2i,t,x2,FintKW) - self.model.F(p1,t,x,FintKW) ) / ( phi2i - p1 )))*fac
-#                # define new function in each iteration
-#                func1 = lambda p1: DTYPE(abs(self.dF(p1,t) - ( self.F(phi2i,t) - self.F(p1,t) ) / ( phi2i - p1 )))
                 # minimize absolute value to find approximate root
                 phi1f = opt.minimize_scalar(func1, bounds=(a1, b1), method="bounded").x
                 # must find 'x' at each final phi1
@@ -320,19 +295,15 @@ class Coex:
                         dx = self.model.find_dx(p2, t, x, XintD, XintKW)             # also need derivative
                     return DTYPE(abs(self.model.dF(p2,t,x,dx,FintKW) - \
                         ( self.model.F(p2,t,x,FintKW) - self.model.F(phi1f,t,x1,FintKW) ) / ( p2 - phi1f )))*fac
-#                # repeat for phi2
-#                func2 = lambda p2: DTYPE(abs(self.dF(p2,t) - ( self.F(p2,t) - self.F(phi1f,t) ) / ( p2 - phi1f )))
                 phi2f = opt.minimize_scalar(func2, bounds=(a2, b2), method="bounded").x
                 # percent change upon update
                 perc1 = abs(phi1f-phi1i)/phi1i
                 perc2 = abs(phi2f-phi2i)/phi2i
                 if (perc1 < thr) and (perc2 < thr):
-        ##            print("\n\n\tTHRESHOLD REACHED after %i iterations.\n" % it)
                     break
                 else:
                     phi1i = phi1f
                     phi2i = phi2f
-        ##            print("\n\n\tELSE CONDITION REACHED (Maxwell).\n")
                     if n == cmax-1:
                         half2 = "(perc1,perc2) = (%1.2e,%1.2e)\n" % (perc1,perc2)
                         print("\n\n\tNO CONVERGENCE (maxwell) : " + half2)
@@ -355,31 +326,18 @@ class Coex:
                 j11 = self.model.d2F(pvec[0],t) - j21
                 j22 = - self.model.d2F(pvec[1],t) - j12
                 return np.array([[j11,j12],[j21,j22]], dtype=DTYPE)
-#            def minfuncMax(pvec):
-#                slope = ( self.model.F(pvec[1],t) - self.model.F(pvec[0],t) ) / ( pvec[1] - pvec[0] )
-#                df1 = self.model.dF(pvec[0],t) - slope
-#                df2 = self.model.dF(pvec[1],t) - slope
-#                return ( (df1*df1) + (df2*df2) )
-#            bnd1 = (eps, self.p_min-eps)       # domains
-#            bnd2 = (self.p_max+eps, self.realMax-eps)
             while not suc:
                 counter += 1               
                 sol = opt.root(funcMax, init, jac=jac, method="df-sane")  #"df-sane"
                 # 'minimize' methods: Nelder-Mead, L-BFGS-B, TNC, SLSQP, Powell, trust-constr
-#                sol = opt.minimize(minfuncMax, init, method="trust-constr", bounds=(bnd1,bnd2), tol=thr)
-#                suc = sol.success
-##                print("\n\n\tOUTPUT from optimization : success = " + str(suc))
                 if counter >= cmax:
-##                    print("\n\t\tMaximum random search limit reached...")
                     perc1 = abs(init[0]-sol.x[0])/init[0]
                     perc2 = abs(init[1]-sol.x[1])/init[1]
                     [perc1, perc2] = funcMax(sol.x)
                     half2 = "(perc1,perc2) = (%1.2e,%1.2e)\n" % (perc1,perc2)
-#                    half2 = "perc_tot = {:.2e}\n".format(minfuncMax(sol.x))
                     print("\n\n\tNO CONVERGENCE (maxwell 2d) : " + half2)
                     return tuple(sol.x)
                 if not suc:
-##                    print("\n\t\tTrying again...")
                     init = sol.x
                     continue
             return tuple(sol.x)
@@ -493,12 +451,6 @@ class Coex:
             plt.text(pcr, tcr/100, xlbl)
             ylbl = "%1.3f" % tcr
             plt.text(pcr/3, 1.01*tcr, ylbl)
-##            xtik = ax.get_xticks()
-##            xtik += [pcr]
-##            ax.set_xticks(xtik)
-##            ytik = ax.get_yticks()
-##            ytik += [tcr]
-##            ax.set_yticks(ytik)
         ax.set_xlabel(r"$\phi$")
         ax.set_ylabel(r"$\ell/\ell_B$")
         ax.set_title(r"LLPS : length $N=${:}, sequence '{}' ['{}']  (SCD={:.4f})".format( \
@@ -509,177 +461,4 @@ class Coex:
         plt.show()
         plt.close()
         return
-
-    #   critical point
-    ##  OLD CRIT. PT. FINDER
-    def OLD_find_crit(self, min_frac=0.1, d2fac=20, d3fac=1, FintKW={}, XintKW={}, rootKW={}):
-        Na = self.model.Na
-        N = self.model.seq.N
-        cmax = self.pars["iterMax"]
-        thr = self.pars["thr"]
-        scale = 1/self.model.seq.N
-#        scale = 1
-        # timer
-        print("\nFinding critical point...")
-        t1 = perf_counter()
-        # Flory-Huggins critical point for some scale
-        pc = Na**(0.5) / ( Na**(0.5) + N**(0.5) )
-        tc = 2*Na*N / ( (Na**(0.5) + N**(0.5))**2 )
-        # initial values
-        pi = pc / 5
-        ti = tc / 10
-        pmin = self.model.small   # minimum 'phi'
-        pmax = (1-2*self.model.salt)/(1+self.model.cionpar) - self.model.small    # maximum 'phi'
-        tmin = self.pars["t_min"]   # minimum 't'
-        tmax = 200*tc       # maximum 't' (i.e. T_eff) for search
-        init = [pi, ti]
-#        d3fac = 100
-        mchar = self.model.mode.lower()[0]    # initial character of 'mode' setting: 'f' for fG _or_ 'r' for rG
-        def cfunc(PT):
-            (phi, t) = PT
-            if any( (phi<0, t<0) ):
-                return [ DTYPE(10), DTYPE(10) ]
-            if mchar == "f":
-                x = 1       # fixed Gaussian: just use unity
-                dx = 0      # any derivatives are zero
-                d2x = 0     #
-                d3x = 0     #
-            elif mchar == "r":
-                x = self.model.find_x(phi, t, XintKW)                     # renormalized Gaussian: solve for 'x'
-                XintD = self.model.XintD(phi, t, x, XintKW)                   # common integral (derivative denominators)
-                dx = self.model.find_dx(phi, t, x, XintD, XintKW)             # also need derivatives
-                d2x = self.model.find_d2x(phi, t, x, dx, XintD, XintKW)       #
-                d3x = self.model.find_d3x(phi, t, x, dx, d2x, XintD, XintKW)  #
-            d2 = (scale)*self.model.d2F(phi, t, x, dx, d2x, FintKW)
-            d3 = (scale)*self.model.d3F(phi, t, x, dx, d2x, d3x, FintKW)
-##            return [ np.arcsinh(d2), np.arcsinh(d3) ]
-            return [ DTYPE(-d2fac*d2+d3fac*d3), DTYPE(-d2fac*d2-d3fac*d3) ]   # other : metrics chosen for other optimization method 
-#            return [ d2fac*d2 , d3fac*d3 ]        # direct : 'metric' functions are identity g(x)=x
-        userootKW = {"method":"lm", "options":{"ftol":thr, "xtol":thr}}
-        userootKW.update(rootKW)
-        for n in range(cmax):
-            # root finder
-            sol = opt.root(cfunc, init, **userootKW)
-            suc = sol.success
-            arr = sol.x
-            err2 = abs(self.model.d2F(arr[0],arr[1]))
-            err3 = abs(self.model.d3F(arr[0],arr[1]))
-            errtot = err2 + err3
-##            errtot = 0
-##            suc = suc and (errtot < 2*thr)
-            errsuc = errtot < 2*thr
-            if suc and errsuc:
-                break
-            else:
-                init = arr
-                continue
-        if not suc and errsuc:
-            print("\n\n\tNO CONVERGENCE (critical pt.)\t-> Solution within threshold anyway.")
-        elif not errsuc:
-#            print("\n\n\tNO CONVERGENCE (critical pt.)\t-> Trying backup method...")
-            print("\n\n\tNO CONVERGENCE (critical pt.)!")
-            print("\t[currently: " + str(tuple(arr)) + "]")
-            print("\t[d#F values: " + str((self.model.d2F(arr[0],arr[1]), self.model.d3F(arr[0],arr[1]))) + "]")
-##            scale = 1/self.N
-#            for n in range(1):  #range(cmax):
-#                ###     TRY (root scalar) SOLVER?    ###
-#                arr[0] = max(arr[0] * 0.95, pmin)       # phi should probably be smaller
-#                arr[1] = min(arr[1] * 1.05, tmax)       # T_eff should probably be larger
-#                # minimize scalar : sum of absolute values
-###                sfunc = lambda ar: (scale)*( abs(self.d2F(ar[0],ar[1])) + abs(self.d3F(ar[0],ar[1])) )
-#                # minimize scalar : sum of squares
-#                sfunc = lambda ar: DTYPE( (scale)*( self.model.d2F(ar[0],ar[1])**2 + self.model.d3F(ar[0],ar[1])**2 ) )
-#                sol = opt.minimize(sfunc, arr, method="Nelder-Mead",
-#                                   bounds=((pmin,pmax),(tmin,tmax)), tol=thr)
-###                sol = opt.root(cfunc, arr, method="lm", tol=thr)
-#                arr = sol.x
-#                suc = sol.success
-###                sfunc2 = lambda p: (scale)*abs(self.d2F(p, arr[1]) + self.d3F(p, arr[1]))
-###                sfunc3 = lambda t: (scale)*abs(self.d2F(arr[0], t) - self.d3F(arr[0], t))
-###                psol = opt.minimize_scalar(sfunc2, method="Bounded", bounds=(0,1), tol=thr)
-###                tsol = opt.minimize_scalar(sfunc3, method="Bounded", bounds=(tmin,tmax), tol=thr)
-###                arr = [psol.x, tsol.x]
-###                suc = psol.success and tsol.success
-#                err2 = abs(self.model.d2F(arr[0],arr[1]))
-#                err3 = abs(self.model.d3F(arr[0],arr[1]))
-#                errsuc = (err2 + err3) < 2*thr
-#                if suc and errsuc:
-#                    break
-#            if not errsuc:
-#                print("\n\tSTILL NO CONVERGENCE (critical pt.)\t-> Backup method failed!")
-        t2 = perf_counter()
-        print("\nTIME to find crit : %2.4f" % (t2-t1))
-        (pf, tf) = arr
-        (self.pcrit, self.tcrit) = (DTYPE(pf), DTYPE(tf)) # store critical point
-        self.pars.update( {"t_min":(min_frac*self.tcrit)} )    # adapt minimum for better searching/plotting
-        return (DTYPE(pf), DTYPE(tf))
-
-
-    ##  NEW CRIT. PT. FINDER -- 'negative T' version
-    # --> THIS VERSION : uses variable u=-t (instead of usual u=1/t) for minimization
-    #   solve for 'u' first from d2F=0 (arbitrary 'phi')        <1D root finder: brenth>
-    #   then find 'phi' by _minimizing 'u' across range of 'phi'   <1D minimizer: brent>
-    def find_crit_NT(self, min_frac=0.1, FintKW={}, XintKW={}, phi_bracket=(1e-8,5e-2,4e-1), u_bracket=(-1e3,-1e-3), \
-                    u_bracket_notes=False):
-        Na = self.model.Na
-        N = self.model.seq.N
-        thr = self.pars["thr"]
-        # timer
-        print("\nFinding critical point...")
-        t1 = perf_counter()
-        # Flory-Huggins critical point for some scale
-        pc = Na**(0.5) / ( Na**(0.5) + N**(0.5) )
-        tc = 2*Na*N / ( (Na**(0.5) + N**(0.5))**2 )
-        uc = -tc
-        # initial values
-        pi = pc
-        ui = uc
-        pmin = self.model.small   # minimum 'phi'
-        pmax = (1-2*self.model.salt)/(1+self.model.cionpar) - self.model.small    # maximum 'phi'
-#        umin = 1/(200*tc)     # minimum 'u' (i.e. maximum 't', or 'T_eff') for search
-#        umax = 1/self.t_min   # maximum 'u' (i.e. minimum 't')
-#        umin = 1e-3
-#        umax = 1e3
-        (umin, umax) = u_bracket
-        if u_bracket_notes:
-            u_print = lambda p, d2f: print("\nD2F BRACKET TEST" + \
-                        "(at phi={:5g}):\n\t(umin, umax)={}\n\t(d2Fmin, d2Fmax)={}\n".format( \
-                        p, (umin, umax),  (d2f(umin), d2f(umax)) ) )
-        else:
-            u_print = lambda p, d2f: None
-        def find_u(phi):
-            d2f = lambda u: self.model.d2F(phi, -u, FintKW=FintKW, XintKW=XintKW)
-            # root_scalar: method="brenth"
-            u_print(phi, d2f)
-            ures = opt.root_scalar(d2f, x0=ui, x1=ui/2, rtol=thr, bracket=(umin,umax))
-#            try:
-#                ures = opt.root_scalar(d2f, bracket=(umin,umax), x0=ui, x1=ui/2, rtol=thr)
-#            except:
-#                return DTYPE(1000)
-            return DTYPE(ures.root)
-        # obtain good bracket first (unless specified)
-        if not phi_bracket:
-#            (pa,pb,pc, ua,ub,uc, calls) = opt.bracket(find_u, 0.5*pmax, 0.1*pmax)
-#            (pa,pb,pc, ua,ub,uc, calls) = opt.bracket(find_u, pc/1000, pc/100)
-            pres = opt.minimize_scalar(find_u, method="bounded", bounds=(pmin,pmax/5), options={"xatol":thr})
-        else:
-            (pa,pb,pc) = phi_bracket
-            # minimize_scalar: method="brent"
-            try:
-                pres = opt.minimize_scalar(find_u, bracket=(pa,pb,pc), tol=thr)
-            except ValueError:
-                print("\nBRACKET FAILED:\n\t(pa,pb,pc)={}\n\t(ua, ub, uc)={}\n".format(  \
-                            (pa, pb, pc),  (find_u(pa), find_u(pb), find_u(pc)) ) )
-#                input("")
-#                pres = opt.minimize_scalar(find_u, bracket=(pa,pb,pc), tol=thr)
-                return
-        # end timer
-        t2 = perf_counter()
-        print("\nTIME to find crit : %2.4f" % (t2-t1))
-        # final values
-        (pf, uf) = (pres.x, pres.fun)
-        tf = -uf   # effective temperature is inverse of 'u'
-        (self.pcrit, self.tcrit) = (DTYPE(pf), DTYPE(tf))       # store critical point
-        self.pars.update( {"t_min":(min_frac*self.tcrit)} )     # adapt minimum for better searching/plotting
-        return (DTYPE(pf), DTYPE(tf))
 #####   #####   #####   #####   #####   #####   #####   #####   #####   #####   #####
