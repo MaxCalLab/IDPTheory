@@ -3,7 +3,7 @@
 Quick Start:
 -
 
-* crit_checker
+* __crit_checker__
   - point to correct file for sequences
   - select sequence and set file headings
   - set parameters with dictionary of optional keys (described below), i.e. pars={"mode":"fixed-G", ...}
@@ -22,9 +22,17 @@ Quick Start:
     > mean-field: boolean flag for using mean field electrostatics contribution (from net charge of sequence)
   - run!
 
-* phase_checker
+* __phase_checker__
   - similar settings to above
+  - settings for temperature-space: \
+      t_min_frac = fraction defining minimum teperature from 't_critical' \
+      t_points = number of points to calculate spinodal and binodal, from 't_critical' down to 't_min_frac*t_critical'
   - run!
+ 
+* __crit_microphos__
+  - similar setup to 'crit_checker'
+  - finds critical point for all given phosphorylation combinations -- can take some time!
+  - run (carefully)!
 
 Details:
 -
