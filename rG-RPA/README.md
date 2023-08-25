@@ -1,11 +1,11 @@
-# code to support renormalized-Gaussian Random Phase Approximation for LLPS
+# renormalized-Gaussian Random Phase Approximation for Liquid-Liquid Phase Separation of IDPs/IDRs
 
 Core files:
 -
-- Sequence - class for loading and characterizing a sequence of aminos
-- Model - class defining Free Energy and derivatives, with parameter settings
-- Xfuncs - support functions in dealing with renormalization factor 'x'
-- Solver - class with solving tools like critical point and spinodal/binodal
+* Sequence - class for loading and characterizing a sequence of aminos
+* Model - class defining Free Energy and derivatives, with parameter settings
+* Xfuncs - support functions in dealing with renormalization factor 'x'
+* Solver - class with solving tools like critical point and spinodal/binodal
 
 Evaluation files:
 -
