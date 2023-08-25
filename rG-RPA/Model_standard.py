@@ -530,26 +530,6 @@ class RPA:
         sol = opt.root_scalar(self.Xzero, args=(phi, t, intKW),
                 rtol=self.Xthr, method="brenth", x0=0.9, x1=3.0, bracket=(1/(N*1000),10000*N))
         xres = sol.root
-#        # function that should be minimized (i.e. zero) at the solution for 'x'
-#        iscale = 1
-#        def Xmin(x):
-#            # function for 'k' integral
-#            ifunc = lambda k: DTYPE( iscale * self.J(k,phi,t,x,cion_fac,salt_fac) )
-#            intJ = self.X_integrate(ifunc, **intKW) / iscale
-#            return np.abs(1 - 1/x - intJ)
-#        # use minimizer to get 'x'
-#        sol = opt.minimize_scalar(Xmin, bounds=(1e-2, 50), method="bounded")
-#        xres = DTYPE(sol.x)
-#        # function for finding a fixed point: f(x)=x
-#        iscale = 1
-#        def Xfixed(x):
-#            # function for 'k' integral
-#            ifunc = lambda k: DTYPE( iscale * self.J(k,phi,t,x,cion_fac,salt_fac) )
-#            intJ = self.X_integrate(ifunc, **intKW) / iscale
-#            return (1 - 1/x - intJ + x)
-#        # use a fixed point finder to get 'x'
-#        sol = opt.fixed_point(Xfixed, 1.0, xtol=self.thr, method="del2")
-#        xres = DTYPE(sol)
         if notes:
             t2 = perf_counter()
             print("\t  FOUND x={:.4g}\t(elapsed time: {:.4g})\n".format(xres, t2-t1))
