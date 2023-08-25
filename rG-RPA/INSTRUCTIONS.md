@@ -1,7 +1,8 @@
 # How to use this code
 
 Quick Start:
-_
+-
+
 * crit_checker
   - point to correct file for sequences
   - select sequence and set file headings
@@ -18,7 +19,7 @@ _
     > ionsize: effective size of ions (salt & counterions), either 'point' [point-like] or 'smear' [Gaussian smearing] \
     > mode: either 'fG' (fixed Gaussian, i.e. factor x=1), or 'rG' (renormalized Gaussian, i.e. use solver for x) \
     > Xthr: threshold value to end iteration early (i.e. convergence) \
-    > mean-field: boolean flag for using mean field electrostatics contribution (from net charge of sequence) \
+    > mean-field: boolean flag for using mean field electrostatics contribution (from net charge of sequence)
   - run!
 
 * phase_checker
@@ -26,4 +27,4 @@ _
   - run!
 
 Details:
-_
+-
