@@ -35,7 +35,7 @@ afile = "./RG_tests.csv"        # file with sequence(s)
 head_name = "NAME"        # heading in CSV file for sequence name
 head_seq = "SEQUENCE"     # heading in CSV file for sequence aminos
 
-seqname = "IP5"    # name of sequence in file
+seqname = "IP5"    # name of sequence in file (command line overwrites protein name)
 
 #pars = "cions+salt+coulomb_fg"        # using code-string to set parameters
 
