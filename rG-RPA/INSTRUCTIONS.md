@@ -4,8 +4,8 @@ Quick Start:
 -
 
 * __crit_checker__
-  - point to correct file for sequences
-  - select sequence and set file headings
+  - point to correct CSV file for sequences (for example RG_tests.csv)
+  - select sequence and set file headings commensurate with the csv file
   - set parameters with dictionary of optional keys (described below), i.e. `pars={"mode":"fixed-G", ...}`
     > `Na`: length of molecule type A (small) [solvent] \
     > `cions`: choice of counter-ions (valence charge 'zc', or 'None') \
