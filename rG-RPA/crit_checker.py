@@ -1,8 +1,8 @@
 ##  Mike Phillips, 6/10/2022
 ##  File for checking critical point calculations.
 ##  > Accepts command line inputs:
-##      1. Sequence
-##      2. Fisher choice (WT or Phos)
+##      1. Sequence Name from the CSV file (RG_tests.csv in this case)
+##      2. Fisher choice (WT or Phos) Type none if not applicable
 ##      3. Parameter string
 ##      4. which model ('standard' or 'selfderivs')
 ##      5. a file (path to sequence file; CSV)
