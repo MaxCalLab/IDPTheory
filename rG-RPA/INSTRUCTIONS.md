@@ -26,7 +26,7 @@
 ### Command line arguments:
 
 Some settings listed above can be given from the command line!  
-Example for order of arguments: `python crit_checker.py 'afile' 'seqname' 'Fisher_choice' 'SaveDir'`
+Example for order of arguments: `python crit_checker.py 'afile' 'seqname' 'Fisher_choice' 'SaveDir'`  
 Note that other settings (CSV heading labels, SALT and other model parameters) must always be set within the Python file.
 
 
