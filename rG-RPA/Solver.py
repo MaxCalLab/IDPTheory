@@ -16,8 +16,6 @@ from time import perf_counter
 
 rand = np.random.rand
 
-import myPlotOptions    # global options
-
 ##  Global Data Type
 DTYPE = np.float64
 
@@ -93,7 +91,7 @@ class Coex:
 
     ## check for various forms of free energy method (offset and/or dimension) : return true values
     def pCheck(self,m,v):
-        if type(v) == str:      # default to zero offset                       
+        if type(v) == str:      # default to zero offset
             return (v,0)
         elif type(v) in (int, float):   # default to 1D iteration
             return ("1d",v)
@@ -250,7 +248,7 @@ class Coex:
             return
 
     #   evaluate Maxwell construction, finding zeros from dF/dphi = (F2-F1)/(phi2-phi1)
-    def extractMax(self, t, maxm="1d", FintKW={}, XintKW={}):     
+    def extractMax(self, t, maxm="1d", FintKW={}, XintKW={}):
         cmax = self.pars["iterMax"]
         thr = self.pars["thr"]
         mchar = self.model.mode.lower()[0]    # initial character of 'mode' setting: 'f' for fG _or_ 'r' for rG
@@ -265,7 +263,7 @@ class Coex:
                 if mchar == "f":
                     x2 = 0
                 elif mchar == "r":
-                    x2 = self.model.find_x(phi2i, t, XintKW) 
+                    x2 = self.model.find_x(phi2i, t, XintKW)
                 # define new function in each iteration
                 def func1(p1):
                     if mchar == "f":
@@ -283,7 +281,7 @@ class Coex:
                 if mchar == "f":
                     x1 = 0
                 elif mchar == "r":
-                    x1 = self.model.find_x(phi1f, t, XintKW)                   
+                    x1 = self.model.find_x(phi1f, t, XintKW)
                 # repeat for phi2
                 def func2(p2):
                     if mchar == "f":
@@ -327,7 +325,7 @@ class Coex:
                 j22 = - self.model.d2F(pvec[1],t) - j12
                 return np.array([[j11,j12],[j21,j22]], dtype=DTYPE)
             while not suc:
-                counter += 1               
+                counter += 1
                 sol = opt.root(funcMax, init, jac=jac, method="df-sane")  #"df-sane"
                 # 'minimize' methods: Nelder-Mead, L-BFGS-B, TNC, SLSQP, Powell, trust-constr
                 if counter >= cmax:
@@ -367,7 +365,7 @@ class Coex:
         else:
             # alternative temperature space: make half the points in a small fraction of range, near T_crit ('tc')
             t_frac = UNevenTspace   # fraction of temp. range with finely-spaced points (half the points are in this range
-            t_space = np.concatenate( ( np.linspace(tc, tc-t_frac*(tc-t_min), t_points//2)[1:],
+            t_space = np.concatenate( ( np.linspace(tc, tc-t_frac*(tc-t_min), 1+t_points//2)[1:],
                             np.linspace(tc-t_frac*(tc-t_min), t_min, t_points-t_points//2)[1:] ) )
         for ax in t_space:
             (self.p_min, self.p_max) = self.build_spino(ax)     # get spinodal boundaries

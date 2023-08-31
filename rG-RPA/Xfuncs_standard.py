@@ -276,7 +276,7 @@ def d3Ddxdp2(kfac1, phi, v2, c_fac, s_fac, ilam, g1, A1):
     return ( kfac1 * 2*v2*(A1+c_fac*g1) )
 # d^3D/dx^2dphi
 def d3Ddx2dp(kfac2, phi, v2, c_fac, s_fac, ilam, G2, g2, A2):
-    return ( kfac2 * (G2 + v2*g2*(ilam+s_fac) + 2*v2*phi*(A2+c_fac*g2) ) ) 
+    return ( kfac2 * (G2 + v2*g2*(ilam+s_fac) + 2*v2*phi*(A2+c_fac*g2) ) )
 # d^3D/dx^3
 def d3Ddx3(kfac3, phi, v2, c_fac, s_fac, ilam, G3, g3, A3):
     return ( kfac3 * phi * (G3 + v2*g3*(ilam+s_fac) + v2*phi*(A3+c_fac*g3)) )

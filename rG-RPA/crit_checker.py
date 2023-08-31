@@ -1,52 +1,53 @@
 ##  Mike Phillips, 6/10/2022
 ##  File for checking critical point calculations.
 ##  > Accepts command line inputs:
-##      1. Sequence Name from the CSV file (RG_tests.csv in this case)
-##      2. Fisher choice (WT or Phos) Type none if not applicable
-##      3. Parameter string
-##      4. which model ('standard' or 'selfderivs')
-##      5. a file (path to sequence file; CSV)
-##      6. directory path for saving critical point
+##      1. Path to CSV file with sequence information (names and aminos)
+##      2. Sequence name (as written in CSV file)
+##      3. Fisher choice (WT or Phos or PM, or None)
+##      4. Directory (path) for saving critical point result
 ##  > Note: you can expect some adjustment of 'phi_bracket' and 'u_bracket' may be required for each case.
 
 import Sequence as S, Solver as V, Model_standard as M
 import sys
-import os
+from os import path
 
-# just print info, no real calculations? --> you may want to get info as a first test!
-#INFO_ONLY = True
-INFO_ONLY = False
+
+## IMPORTANT SETTINGS ##
+
+afile = "./RG_tests.csv"    # file with sequence(s)         [override with first argument at command line]
+#afile = "./Fisher_phos.csv"
+
+seqname = "IP5"             # name of sequence in file      [override with second argument at command line]
+
+
+head_name = "NAME"          # heading in CSV file for sequence name
+head_seq = "SEQUENCE"       # heading in CSV file for sequence aminos
+
+
+SALT = 100    # salt concentration (milli-Molar)
+
+pars = {'cions': 1, 'salt': M.phi_s(SALT), 'v2': 4.1887902047863905, 'epsb': 2.0, 'mode': 'rG'}    # DICTIONARY TO SET PARAMETERS
+
+#pars = {'cions': 1, 'salt': M.phi_s(SALT), 'v2': 0, 'epsb': 0, 'mode': 'fG'}    # fG example
+
+
+## EXTRA SETTINGS ##
 
 # Fisher sequences : wild-type or phosphorylated?   ['None' if not using Fisher seq.]
 #Fisher_choice = "WT"
 #Fisher_choice = "Phos"
-Fisher_choice = None
+#Fisher_choice = "PM"
+Fisher_choice = None            # [override with third argument at command line]
 
-NO_POS = False       # neglect any positive charges in sequence?
-#NO_POS = True
-if NO_POS:
-    S.aminos.update({"R":0, "K":0})
-
-
-# defaults
-afile = "./RG_tests.csv"        # file with sequence(s)
-#afile = "./Fisher_phos.csv"
-
-head_name = "NAME"        # heading in CSV file for sequence name
-head_seq = "SEQUENCE"     # heading in CSV file for sequence aminos
-
-seqname = "IP5"    # name of sequence in file (command line overwrites protein name)
-
-#pars = "cions+salt+coulomb_fg"        # using code-string to set parameters
-
-SALT = 100    # salt concentration (milli-Molar)
-pars = {'cions': 1, 'salt':M.phi_s(SALT), 'v2': 4.1887902047863905, 'eps0': 2.0, 'mode': 'rG', 'mean-field':False}    # dictionary to set parameters
-
-#pars = {'cions': 1, 'v2': 0, 'eps0': 0, 'mode': 'fG', 'ionsize': 'point', 'potential': 'short'}    # other example
+# Directory for saving results
+SaveDir = None                  # [override with fourth argument at command line]
 
 
-# command line inputs
+## ADJUSTMENTS FROM COMMAND LINE ##
+
 args = sys.argv
+if len(args) > 1:
+    afile = args.pop(1)
 if len(args) > 1:
     seqname = args.pop(1)
 if len(args) > 1:
@@ -54,20 +55,19 @@ if len(args) > 1:
     if "none" in Fisher_choice.lower():
         Fisher_choice = None
 if len(args) > 1:
-    pars = args.pop(1)
-if len(args) > 1:
-    which_model = args.pop(1)
-if len(args) > 1:
-    afile = args.pop(1)
-if len(args) > 1:
     SaveDir = args.pop(1)
-else:
-    SaveDir = None
 
+
+## SPECIAL CASE ADJUSTMENTS ##
+
+# bracket for inverse temperature, u=1/t
+UBRACKET = (1e-6,1e4)
+
+# formatted filename for saving result
+crit_file = f"{seqname}_{Fisher_choice}_crit.npy" if Fisher_choice else f"{seqname}_crit.npy"
 
 # Fisher fix
 if type(Fisher_choice) == str and len(Fisher_choice)> 1:
-#    print("TESTING FISHER CHOICE  :  " + Fisher_choice)
     if "wt" in Fisher_choice.lower():
         head_seq = "WT Seq"
         alias = "WT"
@@ -86,13 +86,7 @@ else:
     alias=None
 
 
-# check for string-dictionary format of parameters
-if type(pars) == str:
-    try:
-        pars = eval(pars)
-    except NameError:
-        pars = pars
-
+## CALCULATIONS ##
 
 # get sequence object
 seq = S.Sequence(seqname, file=afile, alias=alias, headName=head_name, headSeq=head_seq)
@@ -101,25 +95,18 @@ seq = S.Sequence(seqname, file=afile, alias=alias, headName=head_name, headSeq=h
 mod = M.RPA(seq, pars)
 mod.info()      # show model information (parameter selection)
 
-# get solver object (coexistence)
+# get solver object (phase coexistence)
 co = V.Coex(mod, spars={"thr":1e-6})
 
-# exit now if all you wanted was sequence information
-if INFO_ONLY:
-    sys.exit()
-
 # find critical point
-print("Minimizing inverse: u=1/t.\n")
-co.find_crit(phi_bracket=None, u_bracket=(1e-6,1e4), u_bracket_notes=False)
+co.find_crit(phi_bracket=None, u_bracket=UBRACKET, u_bracket_notes=False)
 
 (pc, tc) = co.get_crit()
 print("\t(phi_c, T_c) = ({:5.5g}, {:5.5g})\n".format(pc,tc))
 #print("\t(T_c, phi_c) = ({:5.5g}, {:5.5g})\n".format(tc,pc))
 
-
 # check that it's really a solution
 print("\nChecking that d2F and d3F are indeed close to zero at (phi_c,T_c):")
-
 
 if mod.pars["mode"][0].lower() == "r":
     x = mod.find_x(pc, tc)
@@ -155,13 +142,9 @@ print("\td2F(pc,{0:.2f}*tc) = {1:4.3g} ,  d3F(pc,{0:.2f}*tc) = {2:4.3g}\n".forma
 
 # enable saving of critical point as npy array
 if SaveDir:
-    if Fisher_choice:
-        outfile = seqname + "_" + Fisher_choice + "_crit.npy"
-    else:
-        outfile = seqname + "_crit.npy"
-    crit_out = os.path.join(SaveDir, outfile)
+    crit_out = path.join(SaveDir, crit_file)
     V.np.save(crit_out, V.np.asarray(co.get_crit()))
-    print("\n>> Crit. saved!\n")
+    print(f"\n>> Critical point saved:\n'{crit_out:}'")
 
 print(" " + ("- "*20) + "\n")
 
