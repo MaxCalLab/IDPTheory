@@ -1,11 +1,11 @@
-##  Mike Phillips, 10/30/2021
-##  For checking SCDM map of given sequence
-##   - slow version (CPU)
-##  Edited for clarity: Sept. 2023
+##  Austin Haider
+##  SCDM calculation using GPU based on pyOpenCL package
 
 
 import csv
 import numpy as np
+import pyopencl as cl
+import pyopencl.array as cl_array
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm          # for colorbar zero / normalization
 from time import perf_counter
@@ -19,16 +19,14 @@ seq = 'DDRKRRRQHGQLWFPEGFKVSEASKKKRREDLEKTVVQELTWPALLANKESQTERNDLLLLGDFKDGEPNGMA
 #seq = None      # to load from CSV file instead
 
 # selected protein / sequence
-seqname = "as1"
+seqname = "RAM1"
+#seqname = "as1"
 seq_suf = ""            # 'suffix' label, just for output filename
 
 # input file and column headings  (only used if above 'seq = None')
 afile = "./SVset.csv"    # csv file of sequences
 head_name = "NAME"             # column heading for names
 head_seq = "SEQUENCE"          # column heading for amino sequences
-
-# selected matrix type : 'normal' or 'low salt'
-mat_type = "normal"
 
 # output directory (if you want to save)
 SaveDir = None
@@ -49,55 +47,65 @@ interp = None           # interpolations: 'none', 'antialiased', 'nearest', 'bil
 
 ##  KEY FUNCTIONS   ##
 
-# translate given character sequence to list/tuple
-def translate(char_seq):
-    # physical (charge) properties
-    Hcharge = 0
-    # dictionary: effective charge of each residue
-    aminos = {"H":Hcharge, "R":1, "K":1, "D":-1, "E":-1, "X":-2,        # X = model for phosphorylation
-              "G":0, "Q":0, "N":0, "S":0, "F":0, "Y":0, "A":0, "C":0,
-              "I":0, "L":0, "M":0, "P":0, "T":0, "W":0, "V":0, "B":0, "Z":0}
-    lst = []
-    for c in char_seq:
-        lst += [ aminos[c] ]
-    return tuple(lst)
+SCDM_prog = 'SCDM_program.cl'
 
-# generalized SCD - piece '0' of SCDM
-def gscd(seq, i, j):
-    tot = 0
-    main_exp = 0.5 + exp_shift
-    for m in range(j+1,i+1):
-        for n in range(j,m):
-            tot += seq[m]*seq[n]*( (m-n)**(main_exp) )
-    return (tot)
 
-# other parts of SCDM
-def gmat1(seq, i, j):
-    tot = 0
-    main_exp = -1.5 + exp_shift
-    for m in range(j+1,i+1):
-        for n in range(0,j):
-            tot += seq[m]*seq[n]*( (m-j)**(2) )*( (m-n)**(main_exp) )
-    return (tot)
+def q_list(seq):
+    """
+    Converts a sequence of amino acids to a list of charge assignments for each residue.
+    :param seq: String of single letter amino acids
+    :return: list of integers corresponding to charge of each residue
+    """
+    N = len(seq)
+    q_temp = np.zeros([N,1])
+    for n in range(0, N):
+        if seq[n] == 'K' or seq[n] == 'R':
+            q_temp[n] = 1.0
+        elif seq[n] == 'E' or seq[n] == 'D':
+            q_temp[n] = -1.0
+        elif seq[n] == 'X':
+            q_temp[n] = -2.0
+    return q_temp
 
-def gmat2(seq, i, j):
-    tot = 0
-    main_exp = -1.5 + exp_shift
-    for m in range(i+1,N):
-        for n in range(0,j):
-            tot += seq[m]*seq[n]*( (i-j)**(2) )*( (m-n)**(main_exp) )
-    return (tot)
 
-def gmat3(seq, i, j):
-    tot = 0
-    main_exp = -1.5 + exp_shift
-    for m in range(i+1,N):
-        for n in range(j,i+1):
-            tot += seq[m]*seq[n]*( (i-n)**(2) )*( (m-n)**(main_exp) )
-    return (tot)
+def run_program(seq, prog_path):
+    """
+    Compute the SCD matrix for a given amino acid sequence
+    :param seq: string of one-letter amino acids
+    :param prog_path: string of path to .cl file used to calculate SCD matrix
+    :return: NxN array of floats representing the SCD matrix for given sequence. N is the length of the sequence.
+    """
 
-def mat_term(seq, i, j):
-    return ( gscd(seq,i,j) + gmat1(seq,i,j) + gmat2(seq,i,j) + gmat3(seq,i,j) )
+    scdm_prog = open(prog_path).read()
+
+    ctx = cl.create_some_context()
+
+    queue = cl.CommandQueue(ctx)
+    N = len(seq)
+
+    q_array = np.empty((N*N)).astype(np.float32)
+    cl_q_array = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, q_array.nbytes)
+
+    charge_list = q_list(seq).astype(np.float32)
+    cl_charge_list = cl.array.to_device(queue, charge_list)
+
+    program = cl.Program(ctx, scdm_prog).build()
+    q_array_res = program.SCDM_ij
+    q_array_res.set_scalar_arg_dtypes([np.int32, None, None])
+    q_array_res(queue, (N, N), None, N, cl_q_array, cl_charge_list.data)
+
+    queue.finish()
+    cl.enqueue_copy(queue, q_array, cl_q_array)
+
+    q_temp_arr = q_array
+    SCDM_array = np.reshape(q_temp_arr, (N,N))
+
+    for i in range(N):
+        for j in range(i):
+            SCDM_array[i, j] /= (i-j)
+            SCDM_array[j, i] = 0.0
+
+    return SCDM_array
 
 
 ##  EVALUATION  ##
@@ -106,9 +114,7 @@ def mat_term(seq, i, j):
 full_seqname = seqname
 if seq_suf:
     full_seqname += "-" + seq_suf
-if seq:
-    pseq = translate(seq)
-else:
+if not seq:
     with open(afile, newline="") as file:
         reader = csv.reader(file, dialect="excel")
         line1 = reader.__next__()           # first line (column headings)
@@ -117,53 +123,27 @@ else:
         for row in reader:
             # check if row is for selected protein
             if seqname == row[name_i]:
-                pseq = translate(row[seq_i])
+                seq = row[seq_i]
                 break
             else:
                 continue
 
-# shift common exponent appearing in matrix calculations
-if mat_type.lower()[0] == 'n':
-    exp_shift = 0
-    mat_lbl = ""
-elif mat_type.lower()[0] == 'l':
-    exp_shift = 0.5
-    mat_lbl = r"$_{low\,salt}$"
-else:
-    print("\nWARNING:  given matrix type '%s' is not found.\n" % mat_type)
-
-# build sequence charge decoration matrix (SCDM)
-print("\n" + full_seqname.upper())
-print(mat_type)
-N = len(pseq)   # number of residues
-scdm = np.zeros((N,N))  # initial matrix of zeros
-t1 = perf_counter()     # track time to build matrix
-for i in range(1,N):
-    for j in range(i):
-        scdm[i,j] = mat_term(pseq,i,j) / (i-j)
-t2 = perf_counter()     # final time
+# RUN
+t1 = perf_counter()
+SCDM = run_program(seq, SCDM_prog)
+t2 = perf_counter()
 print("TIME to build matrix:\t%2.6f" % (t2-t1))
-# sanity check
-print("\nSCD value (extracted & rescaled from SCDM):\t%2.5f\n" % (scdm[N-1,0]*(N-1)/N))
-# absolute maximum for symmetric plotting
-mat_min = scdm.min()
-mat_max = scdm.max()
-abs_max = max(abs(mat_min), mat_max)
-
 
 # save output file : SCDM numpy array
 if SaveDir:
     # output filename - protein name, suffix label, low-salt option
     outfile = "SCDMarray_" + full_seqname
-    if mat_type.lower()[0] == 'l':
-        outfile += "_ls"
     outfile += ".npy"
     outpath = path.join(SaveDir,outfile)
     print(f"Saving SCDM as:\t'{outpath}'\n")
-    np.save(outpath, scdm)
+    np.save(outpath, SCDM)
 
-
-# plot SCDM map for selected protein / sequence
+# plot SCDM for selected protein / sequence
 if PLOT:
     ##  Plot styles
     PSTY = "seaborn-notebook"
@@ -185,18 +165,23 @@ if PLOT:
     ##  Make Plot
     fig, ax = plt.subplots(figsize=(7,7))
     if symmetric_bar:
+        SCDM = np.asarray(SCDM)
+        mat_min = SCDM.min()
+        mat_max = SCDM.max()
+        abs_max = max(abs(mat_min), mat_max)
         cnorm = TwoSlopeNorm(0, vmin=-abs_max, vmax=abs_max)
     else:
         cnorm = TwoSlopeNorm(0)
-    img = ax.imshow(scdm, cmap=clr, interpolation=interp, norm=cnorm)
+    img = ax.imshow(SCDM, cmap=clr, interpolation=interp, norm=cnorm)
     fig.colorbar(img, ax=ax, shrink=0.75)
+    N = len(seq)
     diag = list(range(N))
     ax.plot(diag,diag,"k-")
     ax.set_xlim(0,N-1)
     ax.set_ylim(N-1,0)
     ax.set_xlabel(r"$j$")
     ax.set_ylabel(r"$i$")
-    ax.set_title(r"SCDM" + mat_lbl + " : " + full_seqname.upper())
+    ax.set_title(r"SCDM : " + full_seqname.upper())
     plt.tight_layout()
     if SaveDir:
         outfig = outfile[:-4]

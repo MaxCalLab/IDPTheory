@@ -4,9 +4,14 @@
 
 #### Also see: Ghosh et al. *Annu. Rev. Biophys.* 2022. 51:355–76. [DOI](https://doi.org/10.1146/annurev-biophys-120221-095357)
 
-## Main file:
+## Main files:
 
-* `SCDMmap` - calculates SCDM using given sequence of amino acids, allows for saving output array and/or plotting
+* `SCDMmap` - CPU: calculates SCDM using given sequence of amino acids, allows for saving output array and/or plotting
+* `SCDM_opencl` - GPU: calculates SCDM with package `pyOpenCL`
+
+## Support file:
+
+* `SCDM_program` - Kernel for application in GPU via pyOpenCL (C-based).
 
 ## Sequence CSV file (examples to try):
 
