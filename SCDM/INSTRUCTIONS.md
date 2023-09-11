@@ -31,6 +31,7 @@
 
 ### Note: GPU `SCDM_opencl` requires package 'pyopencl', and hardware (GPU) that supports OpenCL. Should work with most systems (Intel, AMD, Nvidia). May not work with newer Apple systems (M1+).
 
+---
 
 ## Extra notes for using GPU calculation with pyOpenCL
 
