@@ -19,7 +19,8 @@ seq = 'DDRKRRRQHGQLWFPEGFKVSEASKKKRREDLEKTVVQELTWPALLANKESQTERNDLLLLGDFKDGEPNGMA
 #seq = None      # to load from CSV file instead
 
 # selected protein / sequence
-seqname = "as1"
+seqname = "RAM1"
+#seqname = "as1"
 seq_suf = ""            # 'suffix' label, just for output filename
 
 # input file and column headings  (only used if above 'seq = None')
