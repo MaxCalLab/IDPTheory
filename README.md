@@ -4,4 +4,4 @@ All things related to Intrinsically Disordered Proteins / Regions
 -
 SCDM
 LLPS
-etc.
+IDP conformation predicted with Physics based ML
